@@ -1,5 +1,6 @@
 package in.lubetk.allowance;
 
+import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -10,7 +11,7 @@ public class LambdaFunctionHandler implements RequestHandler<CommandBase, Comman
 	
 	public LambdaFunctionHandler()
 	{
-		db = new AmazonDynamoDBClient();
+		db = new AmazonDynamoDBClient(new EnvironmentVariableCredentialsProvider());
 	}
 	
 	public LambdaFunctionHandler(AmazonDynamoDB db)

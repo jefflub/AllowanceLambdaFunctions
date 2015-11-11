@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import in.lubetk.allowance.command.CreateFamily;
 import in.lubetk.allowance.command.CreateFamily.CreateFamilyResponse;
+import in.lubetk.allowance.command.SetupDBs;
 import junit.framework.TestCase;
 
 public class JsonMarshallingTest
@@ -32,5 +33,14 @@ public class JsonMarshallingTest
 		response.setParentId("ParentID!");
 		String value = mapper.writeValueAsString(response);
 		System.err.println(value);
+	}
+	
+	@Test
+	public void testSetupDBs() throws JsonParseException, JsonMappingException, IOException
+	{
+		String json = "{ \"command\":\"SetupDBs\" }";
+		ObjectMapper mapper = new ObjectMapper();
+		CommandBase command = mapper.readValue(json, CommandBase.class);
+		TestCase.assertTrue(command instanceof SetupDBs);
 	}
 }
