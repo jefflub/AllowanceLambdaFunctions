@@ -9,19 +9,12 @@ import org.junit.Test;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
-import com.amazonaws.services.dynamodbv2.model.CreateTableResult;
-import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
-import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.lambda.runtime.Context;
 
 import in.lubetk.allowance.command.CreateFamily;
 import in.lubetk.allowance.command.CreateFamily.CreateFamilyResponse;
-import in.lubetk.allowance.db.Bucket;
+import in.lubetk.allowance.db.DbUtils;
 import in.lubetk.allowance.db.Family;
-import in.lubetk.allowance.db.Kid;
-import in.lubetk.allowance.db.Parent;
-import in.lubetk.allowance.db.Transaction;
 import junit.framework.TestCase;
 
 public class LambdaFunctionHandlerTest {
@@ -30,17 +23,15 @@ public class LambdaFunctionHandlerTest {
 
     @BeforeClass
     public static void createInput() throws IOException {
-    	setupDynamoDBTables();
+    	dynamoDB = new AmazonDynamoDBClient();
+    	dynamoDB.setEndpoint("http://localhost:8000");
+    	DbUtils.setupTables(dynamoDB);
     }
     
     @AfterClass
     public static void cleanupTables()
     {
-    	dynamoDB.deleteTable("Families");
-    	dynamoDB.deleteTable("Buckets");
-    	dynamoDB.deleteTable("Kids");
-    	dynamoDB.deleteTable("Parents");
-    	dynamoDB.deleteTable("Transactions");
+    	DbUtils.deleteTables(dynamoDB);
     }
 
     private Context createContext() {
@@ -73,34 +64,5 @@ public class LambdaFunctionHandlerTest {
     	family.setName("Lubetkin");
     	mapper.save(family);
     	System.err.println("FamilyID=" + family.getFamilyId());
-    }
-    
-    private static void setupDynamoDBTables()
-    {
-    	dynamoDB = new AmazonDynamoDBClient();
-    	dynamoDB.setEndpoint("http://localhost:8000");
-    	
-    	setupTable(Family.class);
-    	setupTable(Bucket.class);
-    	setupTable(Kid.class);
-    	setupTable(Parent.class);
-    	setupTable(Transaction.class);
-    }
-    
-    private static void setupTable( Class<?> tableClass )
-    {
-    	DynamoDBMapper mapper = new DynamoDBMapper(dynamoDB);
-    	CreateTableRequest req = mapper.generateCreateTableRequest(tableClass);
-    	req.setProvisionedThroughput(new ProvisionedThroughput(5L, 5L));
-    	if ( req.getGlobalSecondaryIndexes() != null )
-    	{
-	    	for ( GlobalSecondaryIndex i : req.getGlobalSecondaryIndexes() )
-	    	{
-	    		i.setProvisionedThroughput(new ProvisionedThroughput(5L, 5L));
-	    	}
-    	}
-    	System.err.println(req.toString());
-    	CreateTableResult result = dynamoDB.createTable(req);
-    	System.err.println(result.toString());
     }
 }
