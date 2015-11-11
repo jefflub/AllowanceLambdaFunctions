@@ -33,15 +33,14 @@ dependencies {
     // testCompile dependency to testCompile 'org.testng:testng:6.8.1' and add
     // 'test.useTestNG()' to your build script.
     testCompile 'junit:junit:4.12'
-    
-    testCompile 'com.amazonaws:DynamoDBLocal:1.10.5.1'
-    testCompile 'com.almworks.sqlite4java:sqlite4java-win32-x64:1.0.392'
-    testCompile 'com.almworks.sqlite4java:sqlite4java-win32-x86:1.0.392'
 }
 
-task copyNativeDeps(type: Copy) {
-    from (configurations.testCompile) {
-        include "*.dll"
-    }
-    into 'build/libs'
+task buildZip(type: Zip) {
+    from compileJava
+    from processResources              
+    into('lib') {
+        from configurations.runtime
+    }           
 }
+
+build.dependsOn buildZip

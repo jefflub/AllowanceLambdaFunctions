@@ -11,6 +11,7 @@ public class DbUtils
 {
 	public static void setupTables(AmazonDynamoDB dynamoDB)
 	{
+//		deleteTables(dynamoDB);
     	setupTable(Family.class, dynamoDB);
     	setupTable(Bucket.class, dynamoDB);
     	setupTable(Kid.class, dynamoDB);
@@ -22,12 +23,12 @@ public class DbUtils
     {
     	DynamoDBMapper mapper = new DynamoDBMapper(dynamoDB);
     	CreateTableRequest req = mapper.generateCreateTableRequest(tableClass);
-    	req.setProvisionedThroughput(new ProvisionedThroughput(5L, 5L));
+    	req.setProvisionedThroughput(new ProvisionedThroughput(1L, 1L));
     	if ( req.getGlobalSecondaryIndexes() != null )
     	{
 	    	for ( GlobalSecondaryIndex i : req.getGlobalSecondaryIndexes() )
 	    	{
-	    		i.setProvisionedThroughput(new ProvisionedThroughput(5L, 5L));
+	    		i.setProvisionedThroughput(new ProvisionedThroughput(1L, 1L));
 	    	}
     	}
     	System.err.println(req.toString());

@@ -1,5 +1,7 @@
 package in.lubetk.allowance;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import org.junit.AfterClass;
@@ -10,8 +12,10 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import in.lubetk.allowance.command.CreateFamily;
 import in.lubetk.allowance.command.CreateFamily.CreateFamilyResponse;
 import in.lubetk.allowance.db.DbUtils;
 import in.lubetk.allowance.db.Family;
@@ -41,16 +45,15 @@ public class LambdaFunctionHandlerTest {
     }
 
     @Test
-    public void testCreateFamily() 
+    public void testCreateFamily() throws JsonGenerationException, JsonMappingException, IOException 
     {
         LambdaFunctionHandler handler = new LambdaFunctionHandler(dynamoDB);
         Context ctx = createContext();
-        CreateFamily command = new CreateFamily();
-        command.setName("Lubetkin Family");
-        command.setParentName("Dad");
-        command.setEmailAddress("jefflub@example.com");
-        command.setPassword("foobar");
-        CreateFamilyResponse output = (CreateFamilyResponse)handler.handleRequest(command, ctx);
+		String json = "{ \"command\":\"CreateFamily\", \"name\":\"Lubetkin Horde\", \"parentName\":\"Dad\", \"emailAddress\":\"jefflub@example.com\", \"password\":\"foobar\" }";
+		ByteArrayInputStream inputStream = new ByteArrayInputStream(json.getBytes());
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream(1024);
+        handler.handleRequest(inputStream, outputStream, ctx);
+        CreateFamilyResponse output = (new ObjectMapper()).readValue(outputStream.toByteArray(), CreateFamilyResponse.class);
         TestCase.assertNotNull(output.getFamilyId());
         TestCase.assertNotNull(output.getParentId());
     }
