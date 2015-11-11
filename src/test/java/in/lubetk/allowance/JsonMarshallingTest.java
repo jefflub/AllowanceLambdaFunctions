@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import in.lubetk.allowance.command.CreateFamily;
+import in.lubetk.allowance.command.CreateFamily.CreateFamilyResponse;
 import junit.framework.TestCase;
 
 public class JsonMarshallingTest
@@ -25,5 +26,11 @@ public class JsonMarshallingTest
 		TestCase.assertEquals("Dad", createFamily.getParentName());
 		TestCase.assertEquals("jefflub@example.com", createFamily.getEmailAddress());
 		TestCase.assertEquals("foobar", createFamily.getPassword());
+		
+		CreateFamilyResponse response = new CreateFamilyResponse();
+		response.setFamilyId("familyID!");
+		response.setParentId("ParentID!");
+		String value = mapper.writeValueAsString(response);
+		System.err.println(value);
 	}
 }
