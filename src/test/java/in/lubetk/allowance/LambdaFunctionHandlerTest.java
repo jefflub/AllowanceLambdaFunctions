@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -19,7 +18,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.lubetk.allowance.command.CreateFamily.CreateFamilyResponse;
 import in.lubetk.allowance.command.StatusReport.StatusReportResponse;
 import in.lubetk.allowance.db.DbUtils;
-import in.lubetk.allowance.db.Family;
 import junit.framework.TestCase;
 
 public class LambdaFunctionHandlerTest {
