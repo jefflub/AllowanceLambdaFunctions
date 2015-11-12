@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import in.lubetk.allowance.command.CreateFamily.CreateFamilyResponse;
+import in.lubetk.allowance.command.StatusReport.StatusReportResponse;
 import in.lubetk.allowance.db.DbUtils;
 import in.lubetk.allowance.db.Family;
 import junit.framework.TestCase;
@@ -24,12 +25,14 @@ import junit.framework.TestCase;
 public class LambdaFunctionHandlerTest {
 
     private static AmazonDynamoDB dynamoDB;
+    private static LambdaFunctionHandler handler;
 
     @BeforeClass
     public static void createInput() throws IOException {
     	dynamoDB = new AmazonDynamoDBClient();
     	dynamoDB.setEndpoint("http://localhost:8000");
     	DbUtils.setupTables(dynamoDB);
+    	handler = new LambdaFunctionHandler(dynamoDB);
     }
     
     @AfterClass
@@ -47,25 +50,27 @@ public class LambdaFunctionHandlerTest {
     @Test
     public void testCreateFamily() throws JsonGenerationException, JsonMappingException, IOException 
     {
-        LambdaFunctionHandler handler = new LambdaFunctionHandler(dynamoDB);
-        Context ctx = createContext();
 		String json = "{ \"command\":\"CreateFamily\", \"name\":\"Lubetkin Horde\", \"parentName\":\"Dad\", \"emailAddress\":\"jefflub@example.com\", \"password\":\"foobar\" }";
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(json.getBytes());
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream(1024);
-        handler.handleRequest(inputStream, outputStream, ctx);
-        CreateFamilyResponse output = (new ObjectMapper()).readValue(outputStream.toByteArray(), CreateFamilyResponse.class);
+        CreateFamilyResponse output = (CreateFamilyResponse)runCommand(json, CreateFamilyResponse.class);
         TestCase.assertNotNull(output.getFamilyId());
         TestCase.assertNotNull(output.getParentId());
     }
     
     @Test
-    public void testTables()
+    public void testStatusReport() throws JsonGenerationException, JsonMappingException, IOException
     {
-    	DynamoDBMapper mapper = new DynamoDBMapper(dynamoDB);
-    	
-    	Family family = new Family();
-    	family.setName("Lubetkin");
-    	mapper.save(family);
-    	System.err.println("FamilyID=" + family.getFamilyId());
+    	String json = "{ \"command\":\"StatusReport\" }";
+    	StatusReportResponse output = (StatusReportResponse)runCommand(json, StatusReportResponse.class);
+    	TestCase.assertNotNull(output);
+    	System.err.println( output.getMessage() );
+    }
+    
+    private CommandResponse runCommand(String json, Class<?> responseClass) throws JsonGenerationException, JsonMappingException, IOException
+    {
+        Context ctx = createContext();
+		ByteArrayInputStream inputStream = new ByteArrayInputStream(json.getBytes());
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream(1024);
+        handler.handleRequest(inputStream, outputStream, ctx);
+        return (CommandResponse)(new ObjectMapper()).readValue(outputStream.toByteArray(), responseClass);
     }
 }
