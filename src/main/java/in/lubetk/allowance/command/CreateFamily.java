@@ -1,6 +1,5 @@
 package in.lubetk.allowance.command;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 
 import in.lubetk.allowance.CommandBase;
@@ -16,9 +15,9 @@ public class CreateFamily extends CommandBase
 	private String password;
 
 	@Override
-	public CommandResponse handleCommand(AmazonDynamoDB db)
+	public CommandResponse handleCommandInternal()
 	{
-		DynamoDBMapper mapper = new DynamoDBMapper(db);
+		DynamoDBMapper mapper = getMapper();
 		Family family = new Family();
 		family.setName(name);
 		mapper.save(family);
@@ -31,7 +30,7 @@ public class CreateFamily extends CommandBase
 		CreateFamilyResponse response = new CreateFamilyResponse();
 		response.setFamilyId(family.getFamilyId());
 		response.setParentId(parent.getParentId());
-		
+		response.setSessionToken(parent.getParentId());
 		return response;
 	}
 	

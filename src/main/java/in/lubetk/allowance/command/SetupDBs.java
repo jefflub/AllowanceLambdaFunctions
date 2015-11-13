@@ -1,7 +1,5 @@
 package in.lubetk.allowance.command;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-
 import in.lubetk.allowance.CommandBase;
 import in.lubetk.allowance.CommandResponse;
 import in.lubetk.allowance.db.DbUtils;
@@ -9,12 +7,12 @@ import in.lubetk.allowance.db.DbUtils;
 public class SetupDBs extends CommandBase
 {
 	@Override
-	public CommandResponse handleCommand(AmazonDynamoDB db)
+	public CommandResponse handleCommandInternal()
 	{
 		String status = "SUCCESS";
 		try
 		{
-			DbUtils.setupTables(db);
+			DbUtils.setupTables(getAmazonDynamoDB());
 		}
 		catch (Exception ex)
 		{

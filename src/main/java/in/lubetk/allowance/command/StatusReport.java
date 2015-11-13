@@ -1,6 +1,5 @@
 package in.lubetk.allowance.command;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
 
 import in.lubetk.allowance.CommandBase;
@@ -10,9 +9,9 @@ public class StatusReport extends CommandBase
 {
 
 	@Override
-	public CommandResponse handleCommand(AmazonDynamoDB db)
+	public CommandResponse handleCommandInternal()
 	{
-		ListTablesResult tables = db.listTables();
+		ListTablesResult tables = getAmazonDynamoDB().listTables();
 		StringBuilder statusMsg = new StringBuilder();
 		if ( tables != null && tables.getTableNames() != null )
 		{

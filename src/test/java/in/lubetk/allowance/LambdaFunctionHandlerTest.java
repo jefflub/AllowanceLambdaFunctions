@@ -15,6 +15,7 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import in.lubetk.allowance.command.AddKidToFamily.AddKidToFamilyResponse;
 import in.lubetk.allowance.command.CreateFamily.CreateFamilyResponse;
 import in.lubetk.allowance.command.StatusReport.StatusReportResponse;
 import in.lubetk.allowance.db.DbUtils;
@@ -52,6 +53,22 @@ public class LambdaFunctionHandlerTest {
         CreateFamilyResponse output = (CreateFamilyResponse)runCommand(json, CreateFamilyResponse.class);
         TestCase.assertNotNull(output.getFamilyId());
         TestCase.assertNotNull(output.getParentId());
+        TestCase.assertEquals(output.getParentId(), output.getSessionToken());
+    }
+    
+    @Test
+    public void testAddKidToFamily() throws JsonGenerationException, JsonMappingException, IOException
+    {
+		String json = "{ \"command\":\"CreateFamily\", \"name\":\"AddKidTest\", \"parentName\":\"Dad\", \"emailAddress\":\"jefflub@example.com\", \"password\":\"foobar\" }";
+        CreateFamilyResponse output = (CreateFamilyResponse)runCommand(json, CreateFamilyResponse.class);
+        TestCase.assertNotNull(output.getFamilyId());
+        TestCase.assertNotNull(output.getParentId());
+        TestCase.assertEquals(output.getParentId(), output.getSessionToken());
+        
+        json = "{\"command\":\"AddKidToFamily\",\"sessionToken\":\"" + output.getSessionToken() + "\",\"name\":\"New Kid\",\"emailAddress\":\"foo@bar.com\",\"allowance\":15}";
+        AddKidToFamilyResponse response = (AddKidToFamilyResponse)runCommand(json, AddKidToFamilyResponse.class);
+        TestCase.assertNotNull(response.getKidId());
+        TestCase.assertEquals(response.getSessionToken(), output.getSessionToken());
     }
     
     @Test
