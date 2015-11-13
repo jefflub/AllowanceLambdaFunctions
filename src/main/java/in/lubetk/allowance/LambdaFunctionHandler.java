@@ -36,7 +36,6 @@ public class LambdaFunctionHandler implements RequestStreamHandler {
     public void handleRequest(InputStream input, OutputStream output, Context context) throws JsonGenerationException, JsonMappingException, IOException 
 	{
 		CommandBase command = mapper.readValue(input, CommandBase.class);
-        context.getLogger().log("Input: " + input);
         CommandResponse response = command.handleCommand(db);
         mapper.writeValue(output, response);
     }

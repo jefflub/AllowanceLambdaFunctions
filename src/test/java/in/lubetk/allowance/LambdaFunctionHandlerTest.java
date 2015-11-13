@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.lubetk.allowance.command.AddKidToFamily.AddKidToFamilyResponse;
 import in.lubetk.allowance.command.AddMoneyForKid.AddMoneyForKidResponse;
 import in.lubetk.allowance.command.CreateFamily.CreateFamilyResponse;
+import in.lubetk.allowance.command.SpendMoney.SpendMoneyResponse;
 import in.lubetk.allowance.command.StatusReport.StatusReportResponse;
 import in.lubetk.allowance.db.Bucket;
 import in.lubetk.allowance.db.DbUtils;
@@ -93,6 +94,11 @@ public class LambdaFunctionHandlerTest {
         TestCase.assertEquals(2500 + 3300, getBucketForName(addMoneyResponse.getBucketInfo(), "Saving").getCurrentTotal());
         TestCase.assertEquals(2500 + 3400, getBucketForName(addMoneyResponse.getBucketInfo(), "Charity").getCurrentTotal());
         
+        json = String.format("{\"command\":\"SpendMoney\",\"sessionToken\":\"%s\", \"bucketId\":\"%s\", \"amount\":2000, \"note\":\"Bought thing\"}",
+        						addMoneyResponse.getSessionToken(), getBucketForName(addMoneyResponse.getBucketInfo(), "Spending").getBucketId());
+        SpendMoneyResponse spendResponse = (SpendMoneyResponse)runCommand(json, SpendMoneyResponse.class);
+        TestCase.assertNotNull(spendResponse.getBucketInfo());
+        TestCase.assertEquals(5000 + 3300 - 2000, spendResponse.getBucketInfo().getCurrentTotal());
     }
     
     private Bucket getBucketForName( Bucket[] buckets, String name )
@@ -118,10 +124,13 @@ public class LambdaFunctionHandlerTest {
     
     private CommandResponse runCommand(String json, Class<?> responseClass) throws JsonGenerationException, JsonMappingException, IOException
     {
+    	System.err.println("Request: " + json);
         Context ctx = createContext();
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(json.getBytes());
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream(1024);
         handler.handleRequest(inputStream, outputStream, ctx);
-        return (CommandResponse)(new ObjectMapper()).readValue(outputStream.toByteArray(), responseClass);
+        String outputJson = outputStream.toString();
+        System.err.println("Response: " + outputJson);
+        return (CommandResponse)(new ObjectMapper()).readValue(outputJson, responseClass);
     }
 }
