@@ -13,7 +13,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper; 
 
 public class LambdaFunctionHandler implements RequestStreamHandler {
 	AmazonDynamoDB db;
@@ -21,15 +21,18 @@ public class LambdaFunctionHandler implements RequestStreamHandler {
 	
 	public LambdaFunctionHandler()
 	{
-		db = new AmazonDynamoDBClient(new EnvironmentVariableCredentialsProvider());
-		db.setRegion(Region.getRegion(Regions.US_WEST_2));
-		mapper = new ObjectMapper();
+		this(null);
 	}
 	
 	public LambdaFunctionHandler(AmazonDynamoDB db)
 	{
-		this();
+		if ( db == null )
+		{
+			db = new AmazonDynamoDBClient(new EnvironmentVariableCredentialsProvider());
+			db.setRegion(Region.getRegion(Regions.US_WEST_2));
+		}
 		this.db = db;
+		mapper = new ObjectMapper();
 	}
 	
 	@Override

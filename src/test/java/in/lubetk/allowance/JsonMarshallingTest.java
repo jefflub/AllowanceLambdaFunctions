@@ -30,7 +30,6 @@ public class JsonMarshallingTest
 		
 		CreateFamilyResponse response = new CreateFamilyResponse();
 		response.setFamilyId("familyID!");
-		response.setParentId("ParentID!");
 		String value = mapper.writeValueAsString(response);
 		System.err.println(value);
 	}

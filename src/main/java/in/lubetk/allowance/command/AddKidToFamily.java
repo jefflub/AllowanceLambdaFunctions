@@ -1,5 +1,9 @@
 package in.lubetk.allowance.command;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 
 import in.lubetk.allowance.CommandBase;
@@ -10,63 +14,62 @@ import in.lubetk.allowance.db.Kid;
 
 public class AddKidToFamily extends CommandBase
 {
-	private static final String[] DEFAULT_BUCKETS = { "Spending", "Saving", "Charity" };
-	private static final int[] DEFAULT_ALLOCATIONS = { 50, 25, 25 };
+	private static final Map<String, Integer> DEFAULT_BUCKETS;
 	private String name;
 	private String emailAddress;
 	private int allowance;
-	private String[] buckets;
-	private int[] bucketAllocations;
+	private Map<String, Integer> buckets;
+	
+	static
+	{
+		DEFAULT_BUCKETS = new HashMap<>();
+		DEFAULT_BUCKETS.put("Spending", 50);
+		DEFAULT_BUCKETS.put("Saving", 25);
+		DEFAULT_BUCKETS.put("Charity", 25);
+	}
 	
 	@Override
 	public CommandResponse handleCommandInternal()
 	{
 		DynamoDBMapper mapper = getMapper();
 
-		if ( buckets == null || buckets.length == 0 )
+		if ( buckets == null || buckets.size() == 0 )
 		{
 			buckets = DEFAULT_BUCKETS;
-			bucketAllocations = DEFAULT_ALLOCATIONS;
 		}
 		
-		if ( buckets.length != bucketAllocations.length )
-			throw new RuntimeException( "AddKidToFamily: Must have same number of buckets and default allocations" );
-		
 		int allocationSum = 0;
-		for ( int i : bucketAllocations )
+		for ( Integer i : buckets.values() )
 		{
 			allocationSum += i;
 		}
 		if ( allocationSum != 100 )
 			throw new RuntimeException( "AddKidToFamily: Bucket allocations must sum to 100." );
 		
-		// Add the kid
 		Kid kid = new Kid();
 		kid.setName(name);
 		kid.setEmailAddress(emailAddress);
 		kid.setAllowance(allowance);
 		mapper.save(kid);
 		
-		// Add the kid ID to family
 		Family family = getSessionFamily();
 		family.addKid(kid.getKidId());
 		mapper.save(family);
-		// For each bucket
-		for (int i = 0; i < buckets.length; i++)
+
+		for (Entry<String, Integer> e : buckets.entrySet())
 		{
-		//    Add bucket
 			Bucket bucket = new Bucket();
-			bucket.setName(buckets[i]);
+			bucket.setName(e.getKey());
 			bucket.setCurrentTotal(0);
+			bucket.setDefaultAllocation(e.getValue());
 			mapper.save(bucket);
-		//    Add bucket ID to kid
-			kid.addBucket(bucket.getBucketId(), bucketAllocations[i]);
+			kid.addBucket(bucket.getBucketId());
 		}
+		
 		// Save kid
 		mapper.save(kid);
 		AddKidToFamilyResponse response = new AddKidToFamilyResponse();
 		response.setKidId(kid.getKidId());
-		response.setSessionToken(getSessionToken());
 		return response;
 	}
 	
@@ -105,24 +108,14 @@ public class AddKidToFamily extends CommandBase
 		this.allowance = allowance;
 	}
 
-	public String[] getBuckets()
+	public Map<String, Integer> getBuckets()
 	{
 		return buckets;
 	}
 
-	public void setBuckets(String[] buckets)
+	public void setBuckets(Map<String, Integer> buckets)
 	{
 		this.buckets = buckets;
-	}
-
-	public int[] getBucketAllocations()
-	{
-		return bucketAllocations;
-	}
-
-	public void setBucketAllocations(int[] bucketAllocations)
-	{
-		this.bucketAllocations = bucketAllocations;
 	}
 
 	public String getName()

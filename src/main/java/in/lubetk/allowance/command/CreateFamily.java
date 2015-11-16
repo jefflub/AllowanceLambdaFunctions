@@ -17,6 +17,7 @@ public class CreateFamily extends CommandBase
 	@Override
 	public CommandResponse handleCommandInternal()
 	{
+		// TODO: Add duplicate validation
 		DynamoDBMapper mapper = getMapper();
 		Family family = new Family();
 		family.setName(name);
@@ -26,18 +27,16 @@ public class CreateFamily extends CommandBase
 		parent.setEmailAddress(emailAddress);
 		parent.setPassword(password);
 		parent.setFamilyId(family.getFamilyId());
+		parent.setCognitoIdentityId(getCognitoIdentityId());
 		mapper.save(parent);
 		CreateFamilyResponse response = new CreateFamilyResponse();
 		response.setFamilyId(family.getFamilyId());
-		response.setParentId(parent.getParentId());
-		response.setSessionToken(parent.getParentId());
 		return response;
 	}
 	
 	public static class CreateFamilyResponse extends CommandResponse
 	{
 		private String familyId;
-		private String parentId;
 		public String getFamilyId()
 		{
 			return familyId;
@@ -45,14 +44,6 @@ public class CreateFamily extends CommandBase
 		public void setFamilyId(String familyId)
 		{
 			this.familyId = familyId;
-		}
-		public String getParentId()
-		{
-			return parentId;
-		}
-		public void setParentId(String parentId)
-		{
-			this.parentId = parentId;
 		}
 	}
 

@@ -2,6 +2,7 @@ package in.lubetk.allowance.command;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -16,45 +17,48 @@ public class AddMoneyForKid extends CommandBase
 	private String kidId;
 	private int amount;
 	private String note;
-	private Map<String, Integer> allocationOverride;
+	private Map<String, Integer> allocations;
 	
 	@Override
 	public CommandResponse handleCommandInternal()
 	{
 		Kid kid = Kid.loadFromId(getMapper(), kidId);
-		Map<String, Integer> bucketInfo = kid.extractBucketInfo();
-		
-		if (allocationOverride == null || allocationOverride.isEmpty())
-		{
-			allocationOverride = bucketInfo;
-		}
-		else
+		Map<String, Bucket> bucketMap = Bucket.loadFromIds(getMapper(), kid.getBuckets());
+		if (allocations != null && !allocations.isEmpty())
 		{
 			int allocationSum = 0;
-			for (Entry<String, Integer> e : allocationOverride.entrySet())
+			for (Entry<String, Integer> e : allocations.entrySet())
 			{
-				if (!bucketInfo.containsKey(e.getKey()))
+				if (!bucketMap.containsKey(e.getKey()))
 					throw new RuntimeException("AddMoneyForKid: Attempted to add money to non-existent bucket");
 				allocationSum += e.getValue();
 			}
 			if (allocationSum != 100)
 				throw new RuntimeException("AddMoneyForKid: Custom bucket allocations must add to 100");
 		}
+		else
+		{
+			allocations = new HashMap<>();
+			for ( Entry<String, Bucket> e : bucketMap.entrySet() )
+			{
+				allocations.put(e.getKey(), e.getValue().getDefaultAllocation());
+			}
+		}
 		
 		ArrayList<Bucket> responseBuckets = new ArrayList<Bucket>();
-		for (Entry<String, Integer> e : allocationOverride.entrySet())
+		for (Entry<String, Integer> e : allocations.entrySet())
 		{
 			// Add transaction
 			Transaction t = new Transaction();
 			t.setDate(new Date());
 			t.setBucketId(e.getKey());
 			t.setNote(note);
-			t.setParentId(getSessionToken());
+			t.setParentId(getCognitoIdentityId());
 			int bucketAmount = (amount * e.getValue()) / 100; 
 			t.setAmount(bucketAmount);
 			getMapper().save(t);
 			// Update bucket current total
-			Bucket bucket = Bucket.loadFromId(getMapper(), e.getKey());
+			Bucket bucket = bucketMap.get(e.getKey());
 			bucket.setCurrentTotal(bucket.getCurrentTotal() + bucketAmount);
 			getMapper().save(bucket);
 			responseBuckets.add(bucket);
@@ -62,7 +66,6 @@ public class AddMoneyForKid extends CommandBase
 		
 		AddMoneyForKidResponse response = new AddMoneyForKidResponse();
 		response.setBucketInfo(responseBuckets.toArray(new Bucket[1]));
-		response.setSessionToken(getSessionToken());
 		return response;
 	}
 	
@@ -111,14 +114,14 @@ public class AddMoneyForKid extends CommandBase
 		this.note = note;
 	}
 
-	public Map<String, Integer> getAllocationOverride()
+	public Map<String, Integer> getAllocations()
 	{
-		return allocationOverride;
+		return allocations;
 	}
 
-	public void setAllocationOverride(Map<String, Integer> allocationOverride)
+	public void setAllocations(Map<String, Integer> allocations)
 	{
-		this.allocationOverride = allocationOverride;
+		this.allocations = allocations;
 	}
 
 }

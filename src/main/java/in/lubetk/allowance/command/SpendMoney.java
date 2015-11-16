@@ -19,6 +19,7 @@ public class SpendMoney extends CommandBase
 		Bucket bucket = Bucket.loadFromId(getMapper(), bucketId);
 		Transaction trans = new Transaction();
 		trans.setBucketId(bucketId);
+		trans.setParentId(getCognitoIdentityId());
 		trans.setNote(note);
 		trans.setAmount((amount < 0 ? 1 : -1) * amount);
 		trans.setDate(new Date());
@@ -27,7 +28,6 @@ public class SpendMoney extends CommandBase
 		getMapper().save(bucket);
 		SpendMoneyResponse response = new SpendMoneyResponse();
 		response.setBucketInfo(bucket);
-		response.setSessionToken(getSessionToken());
 		return response;
 	}
 	

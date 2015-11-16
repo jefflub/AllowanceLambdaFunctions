@@ -20,6 +20,7 @@ import in.lubetk.allowance.command.AddMoneyForKid.AddMoneyForKidResponse;
 import in.lubetk.allowance.command.CreateFamily.CreateFamilyResponse;
 import in.lubetk.allowance.command.SpendMoney.SpendMoneyResponse;
 import in.lubetk.allowance.command.StatusReport.StatusReportResponse;
+import in.lubetk.allowance.command.ViewFamily.ViewFamilyResponse;
 import in.lubetk.allowance.db.Bucket;
 import in.lubetk.allowance.db.DbUtils;
 import junit.framework.TestCase;
@@ -60,18 +61,20 @@ public class LambdaFunctionHandlerTest {
     @Test
     public void testGoldenPath() throws JsonGenerationException, JsonMappingException, IOException 
     {
-		String json = "{ \"command\":\"CreateFamily\", \"name\":\"Lubetkin Horde\", \"parentName\":\"Dad\", \"emailAddress\":\"jefflub@example.com\", \"password\":\"foobar\" }";
+		String json = "{ \"command\":\"CreateFamily\", \"name\":\"Lubetkin Horde\", \"parentName\":\"Dad\", \"cognitoIdentityId\":\"12345\", \"password\":\"foobar\" }";
         CreateFamilyResponse output = (CreateFamilyResponse)runCommand(json, CreateFamilyResponse.class);
         TestCase.assertNotNull(output.getFamilyId());
-        TestCase.assertNotNull(output.getParentId());
-        TestCase.assertEquals(output.getParentId(), output.getSessionToken());
         
-        json = "{\"command\":\"AddKidToFamily\",\"sessionToken\":\"" + output.getSessionToken() + "\",\"name\":\"New Kid\",\"emailAddress\":\"foo@bar.com\",\"allowance\":15}";
+        json = "{\"command\":\"AddKidToFamily\", \"cognitoIdentityId\":\"12345\", \"name\":\"New Kid\",\"emailAddress\":\"foo@bar.com\",\"allowance\":15}";
         AddKidToFamilyResponse response = (AddKidToFamilyResponse)runCommand(json, AddKidToFamilyResponse.class);
         TestCase.assertNotNull(response.getKidId());
-        TestCase.assertEquals(response.getSessionToken(), output.getSessionToken());
         
-        json = String.format("{\"command\":\"AddMoneyForKid\",\"sessionToken\":\"%s\", \"kidId\":\"%s\", \"amount\":10000, \"note\":\"Default allocations\"}", response.getSessionToken(), response.getKidId());
+        json = "{\"command\":\"AddKidToFamily\", \"cognitoIdentityId\":\"12345\", \"name\":\"Bad Kid\",\"emailAddress\":\"baddude@bar.com\"," 
+        					+ "\"allowance\":10, \"buckets\":{\"Booze\":33, \"Chicks\":67}}";
+        AddKidToFamilyResponse addKidResponse = (AddKidToFamilyResponse)runCommand(json, AddKidToFamilyResponse.class);
+        TestCase.assertNotNull(addKidResponse.getKidId());
+        
+        json = String.format("{\"command\":\"AddMoneyForKid\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\", \"amount\":10000, \"note\":\"Default allocations\"}",  response.getKidId());
         AddMoneyForKidResponse addMoneyResponse = (AddMoneyForKidResponse)runCommand(json, AddMoneyForKidResponse.class);
         TestCase.assertNotNull(addMoneyResponse.getBucketInfo());
         TestCase.assertEquals(addMoneyResponse.getBucketInfo().length, 3);
@@ -79,10 +82,10 @@ public class LambdaFunctionHandlerTest {
         TestCase.assertEquals(2500, getBucketForName(addMoneyResponse.getBucketInfo(), "Saving").getCurrentTotal());
         TestCase.assertEquals(2500, getBucketForName(addMoneyResponse.getBucketInfo(), "Charity").getCurrentTotal());
 
-        json = String.format("{\"command\":\"AddMoneyForKid\",\"sessionToken\":\"%s\", \"kidId\":\"%s\", " 
+        json = String.format("{\"command\":\"AddMoneyForKid\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\", " 
         					  + "\"amount\":10000, \"note\":\"Custom allocations\", "
-        					  + "\"allocationOverride\":{" +
-        					  "\"%s\":33, \"%s\":33, \"%s\":34}}", response.getSessionToken(), response.getKidId(),
+        					  + "\"allocations\":{" +
+        					  "\"%s\":33, \"%s\":33, \"%s\":34}}", response.getKidId(),
         					  getBucketForName(addMoneyResponse.getBucketInfo(), "Spending").getBucketId(),
         					  getBucketForName(addMoneyResponse.getBucketInfo(), "Saving").getBucketId(),
         					  getBucketForName(addMoneyResponse.getBucketInfo(), "Charity").getBucketId()
@@ -94,11 +97,48 @@ public class LambdaFunctionHandlerTest {
         TestCase.assertEquals(2500 + 3300, getBucketForName(addMoneyResponse.getBucketInfo(), "Saving").getCurrentTotal());
         TestCase.assertEquals(2500 + 3400, getBucketForName(addMoneyResponse.getBucketInfo(), "Charity").getCurrentTotal());
         
-        json = String.format("{\"command\":\"SpendMoney\",\"sessionToken\":\"%s\", \"bucketId\":\"%s\", \"amount\":2000, \"note\":\"Bought thing\"}",
-        						addMoneyResponse.getSessionToken(), getBucketForName(addMoneyResponse.getBucketInfo(), "Spending").getBucketId());
+        json = String.format("{\"command\":\"SpendMoney\", \"cognitoIdentityId\":\"12345\", \"bucketId\":\"%s\", \"amount\":2000, \"note\":\"Bought thing\"}",
+				getBucketForName(addMoneyResponse.getBucketInfo(), "Spending").getBucketId());
         SpendMoneyResponse spendResponse = (SpendMoneyResponse)runCommand(json, SpendMoneyResponse.class);
         TestCase.assertNotNull(spendResponse.getBucketInfo());
         TestCase.assertEquals(5000 + 3300 - 2000, spendResponse.getBucketInfo().getCurrentTotal());
+
+        json = String.format("{\"command\":\"AddMoneyForKid\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\", \"amount\":20000, \"note\":\"Default allocations\"}",  addKidResponse.getKidId());
+        addMoneyResponse = (AddMoneyForKidResponse)runCommand(json, AddMoneyForKidResponse.class);
+        TestCase.assertNotNull(addMoneyResponse.getBucketInfo());
+        TestCase.assertEquals(addMoneyResponse.getBucketInfo().length, 2);
+        TestCase.assertEquals(6600, getBucketForName(addMoneyResponse.getBucketInfo(), "Booze").getCurrentTotal());
+        TestCase.assertEquals(13400, getBucketForName(addMoneyResponse.getBucketInfo(), "Chicks").getCurrentTotal());
+        
+        json = "{\"command\":\"ViewFamily\", \"cognitoIdentityId\":\"12345\"}";
+        ViewFamilyResponse vfResponse = (ViewFamilyResponse)runCommand(json, ViewFamilyResponse.class);
+        TestCase.assertNotNull(vfResponse);
+        TestCase.assertEquals(2, vfResponse.getKids().length);
+        TestCase.assertEquals(5, vfResponse.getBuckets().size());
+        for ( String bid : vfResponse.getBuckets().keySet() )
+        {
+        	Bucket b = vfResponse.getBuckets().get(bid);
+        	switch (b.getName())
+        	{
+        	case "Spending":
+        		TestCase.assertEquals(5000 + 3300 - 2000, b.getCurrentTotal());
+        		break;
+        	case "Saving":
+        		TestCase.assertEquals(2500 + 3300, b.getCurrentTotal());
+        		break;
+        	case "Charity":
+        		TestCase.assertEquals(2500 + 3400, b.getCurrentTotal());
+        		break;
+        	case "Booze":
+        		TestCase.assertEquals(6600, b.getCurrentTotal());
+        		break;
+        	case "Chicks":
+        		TestCase.assertEquals(13400, b.getCurrentTotal());
+        		break;
+        	default:
+        		TestCase.fail("Unknown bucket returned from ViewFamily");
+        	}
+        }
     }
     
     private Bucket getBucketForName( Bucket[] buckets, String name )

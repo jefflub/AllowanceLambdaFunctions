@@ -16,7 +16,7 @@ property = "command")
 public abstract class CommandBase
 {
 	String command;
-	String sessionToken;
+	String cognitoIdentityId;
 	AmazonDynamoDB db;
 	DynamoDBMapper mapper;
 	
@@ -42,19 +42,19 @@ public abstract class CommandBase
 		this.command = command;
 	}
 	
-	public String getSessionToken()
+	public String getCognitoIdentityId()
 	{
-		return sessionToken;
+		return cognitoIdentityId;
 	}
 	
-	public void setSessionToken(String sessionToken)
+	public void setCognitoIdentityId(String cognitoIdentityId)
 	{
-		this.sessionToken = sessionToken;
+		this.cognitoIdentityId = cognitoIdentityId;
 	}
 	
 	public Parent getSessionParent()
 	{
-		return mapper.load(Parent.class, sessionToken);
+		return mapper.load(Parent.class, cognitoIdentityId);
 	}
 	
 	public Family getSessionFamily()
