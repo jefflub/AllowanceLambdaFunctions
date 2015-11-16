@@ -70,12 +70,14 @@ public class AddKidToFamily extends CommandBase
 		mapper.save(kid);
 		AddKidToFamilyResponse response = new AddKidToFamilyResponse();
 		response.setKidId(kid.getKidId());
+		response.setViewToken(kid.getViewToken());
 		return response;
 	}
 	
 	public static class AddKidToFamilyResponse extends CommandResponse
 	{
 		private String kidId;
+		private String viewToken;
 		
 		public void setKidId(String kidId)
 		{
@@ -85,6 +87,16 @@ public class AddKidToFamily extends CommandBase
 		public String getKidId()
 		{
 			return kidId;
+		}
+
+		public String getViewToken()
+		{
+			return viewToken;
+		}
+
+		public void setViewToken(String viewToken)
+		{
+			this.viewToken = viewToken;
 		}
 	}
 

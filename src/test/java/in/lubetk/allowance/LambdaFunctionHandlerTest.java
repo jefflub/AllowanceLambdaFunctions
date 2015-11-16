@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.lubetk.allowance.command.AddKidToFamily.AddKidToFamilyResponse;
 import in.lubetk.allowance.command.AddMoneyForKid.AddMoneyForKidResponse;
 import in.lubetk.allowance.command.CreateFamily.CreateFamilyResponse;
+import in.lubetk.allowance.command.ResetKidViewToken.ResetKidViewTokenResponse;
 import in.lubetk.allowance.command.SpendMoney.SpendMoneyResponse;
 import in.lubetk.allowance.command.StatusReport.StatusReportResponse;
 import in.lubetk.allowance.command.ViewFamily.ViewFamilyResponse;
@@ -73,6 +74,11 @@ public class LambdaFunctionHandlerTest {
         					+ "\"allowance\":10, \"buckets\":{\"Booze\":33, \"Chicks\":67}}";
         AddKidToFamilyResponse addKidResponse = (AddKidToFamilyResponse)runCommand(json, AddKidToFamilyResponse.class);
         TestCase.assertNotNull(addKidResponse.getKidId());
+        
+        json = String.format("{\"command\":\"ResetKidViewToken\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\"}", addKidResponse.getKidId());
+        ResetKidViewTokenResponse rkvtResponse = (ResetKidViewTokenResponse)runCommand(json, ResetKidViewTokenResponse.class);
+        TestCase.assertNotNull(rkvtResponse);
+        TestCase.assertFalse(rkvtResponse.getViewToken().equals(addKidResponse.getViewToken()));
         
         json = String.format("{\"command\":\"AddMoneyForKid\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\", \"amount\":10000, \"note\":\"Default allocations\"}",  response.getKidId());
         AddMoneyForKidResponse addMoneyResponse = (AddMoneyForKidResponse)runCommand(json, AddMoneyForKidResponse.class);

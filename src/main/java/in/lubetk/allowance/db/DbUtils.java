@@ -11,12 +11,11 @@ public class DbUtils
 {
 	public static void setupTables(AmazonDynamoDB dynamoDB)
 	{
-//		deleteTables(dynamoDB);
     	setupTable(Family.class, dynamoDB);
     	setupTable(Bucket.class, dynamoDB);
     	setupTable(Kid.class, dynamoDB);
     	setupTable(Parent.class, dynamoDB);
-    	setupTable(Transaction.class, dynamoDB);	
+    	setupTable(Transaction.class, dynamoDB);
 	}
 	
 	private static void setupTable(Class<?> tableClass, AmazonDynamoDB dynamoDB)
