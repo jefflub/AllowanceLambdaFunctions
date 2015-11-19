@@ -22,6 +22,7 @@ import in.lubetk.allowance.command.ResetKidViewToken.ResetKidViewTokenResponse;
 import in.lubetk.allowance.command.SpendMoney.SpendMoneyResponse;
 import in.lubetk.allowance.command.StatusReport.StatusReportResponse;
 import in.lubetk.allowance.command.ViewFamily.ViewFamilyResponse;
+import in.lubetk.allowance.command.ViewKidFromToken.ViewKidFromTokenResponse;
 import in.lubetk.allowance.db.Bucket;
 import in.lubetk.allowance.db.DbUtils;
 import junit.framework.TestCase;
@@ -63,25 +64,25 @@ public class LambdaFunctionHandlerTest {
     public void testGoldenPath() throws JsonGenerationException, JsonMappingException, IOException 
     {
 		String json = "{ \"command\":\"CreateFamily\", \"name\":\"Lubetkin Horde\", \"parentName\":\"Dad\", \"cognitoIdentityId\":\"12345\", \"password\":\"foobar\" }";
-        CreateFamilyResponse output = (CreateFamilyResponse)runCommand(json, CreateFamilyResponse.class);
+        CreateFamilyResponse output = runCommand(json, CreateFamilyResponse.class);
         TestCase.assertNotNull(output.getFamilyId());
         
         json = "{\"command\":\"AddKidToFamily\", \"cognitoIdentityId\":\"12345\", \"name\":\"New Kid\",\"emailAddress\":\"foo@bar.com\",\"allowance\":15}";
-        AddKidToFamilyResponse response = (AddKidToFamilyResponse)runCommand(json, AddKidToFamilyResponse.class);
-        TestCase.assertNotNull(response.getKidId());
+        AddKidToFamilyResponse addKidResponse1 = runCommand(json, AddKidToFamilyResponse.class);
+        TestCase.assertNotNull(addKidResponse1.getKidId());
         
         json = "{\"command\":\"AddKidToFamily\", \"cognitoIdentityId\":\"12345\", \"name\":\"Bad Kid\",\"emailAddress\":\"baddude@bar.com\"," 
         					+ "\"allowance\":10, \"buckets\":{\"Booze\":33, \"Chicks\":67}}";
-        AddKidToFamilyResponse addKidResponse = (AddKidToFamilyResponse)runCommand(json, AddKidToFamilyResponse.class);
-        TestCase.assertNotNull(addKidResponse.getKidId());
+        AddKidToFamilyResponse addKidResponse2 = runCommand(json, AddKidToFamilyResponse.class);
+        TestCase.assertNotNull(addKidResponse2.getKidId());
         
-        json = String.format("{\"command\":\"ResetKidViewToken\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\"}", addKidResponse.getKidId());
-        ResetKidViewTokenResponse rkvtResponse = (ResetKidViewTokenResponse)runCommand(json, ResetKidViewTokenResponse.class);
+        json = String.format("{\"command\":\"ResetKidViewToken\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\"}", addKidResponse1.getKidId());
+        ResetKidViewTokenResponse rkvtResponse = runCommand(json, ResetKidViewTokenResponse.class);
         TestCase.assertNotNull(rkvtResponse);
-        TestCase.assertFalse(rkvtResponse.getViewToken().equals(addKidResponse.getViewToken()));
+        TestCase.assertFalse(rkvtResponse.getViewToken().equals(addKidResponse1.getViewToken()));
         
-        json = String.format("{\"command\":\"AddMoneyForKid\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\", \"amount\":10000, \"note\":\"Default allocations\"}",  response.getKidId());
-        AddMoneyForKidResponse addMoneyResponse = (AddMoneyForKidResponse)runCommand(json, AddMoneyForKidResponse.class);
+        json = String.format("{\"command\":\"AddMoneyForKid\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\", \"amount\":10000, \"note\":\"Default allocations\"}",  addKidResponse1.getKidId());
+        AddMoneyForKidResponse addMoneyResponse = runCommand(json, AddMoneyForKidResponse.class);
         TestCase.assertNotNull(addMoneyResponse.getBucketInfo());
         TestCase.assertEquals(addMoneyResponse.getBucketInfo().length, 3);
         TestCase.assertEquals(5000, getBucketForName(addMoneyResponse.getBucketInfo(), "Spending").getCurrentTotal());
@@ -91,12 +92,12 @@ public class LambdaFunctionHandlerTest {
         json = String.format("{\"command\":\"AddMoneyForKid\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\", " 
         					  + "\"amount\":10000, \"note\":\"Custom allocations\", "
         					  + "\"allocations\":{" +
-        					  "\"%s\":33, \"%s\":33, \"%s\":34}}", response.getKidId(),
+        					  "\"%s\":33, \"%s\":33, \"%s\":34}}", addKidResponse1.getKidId(),
         					  getBucketForName(addMoneyResponse.getBucketInfo(), "Spending").getBucketId(),
         					  getBucketForName(addMoneyResponse.getBucketInfo(), "Saving").getBucketId(),
         					  getBucketForName(addMoneyResponse.getBucketInfo(), "Charity").getBucketId()
         					  );
-        addMoneyResponse = (AddMoneyForKidResponse)runCommand(json, AddMoneyForKidResponse.class);
+        addMoneyResponse = runCommand(json, AddMoneyForKidResponse.class);
         TestCase.assertNotNull(addMoneyResponse.getBucketInfo());
         TestCase.assertEquals(addMoneyResponse.getBucketInfo().length, 3);
         TestCase.assertEquals(5000 + 3300, getBucketForName(addMoneyResponse.getBucketInfo(), "Spending").getCurrentTotal());
@@ -105,19 +106,19 @@ public class LambdaFunctionHandlerTest {
         
         json = String.format("{\"command\":\"SpendMoney\", \"cognitoIdentityId\":\"12345\", \"bucketId\":\"%s\", \"amount\":2000, \"note\":\"Bought thing\"}",
 				getBucketForName(addMoneyResponse.getBucketInfo(), "Spending").getBucketId());
-        SpendMoneyResponse spendResponse = (SpendMoneyResponse)runCommand(json, SpendMoneyResponse.class);
+        SpendMoneyResponse spendResponse = runCommand(json, SpendMoneyResponse.class);
         TestCase.assertNotNull(spendResponse.getBucketInfo());
         TestCase.assertEquals(5000 + 3300 - 2000, spendResponse.getBucketInfo().getCurrentTotal());
 
-        json = String.format("{\"command\":\"AddMoneyForKid\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\", \"amount\":20000, \"note\":\"Default allocations\"}",  addKidResponse.getKidId());
-        addMoneyResponse = (AddMoneyForKidResponse)runCommand(json, AddMoneyForKidResponse.class);
+        json = String.format("{\"command\":\"AddMoneyForKid\", \"cognitoIdentityId\":\"12345\", \"kidId\":\"%s\", \"amount\":20000, \"note\":\"Default allocations\"}",  addKidResponse2.getKidId());
+        addMoneyResponse = runCommand(json, AddMoneyForKidResponse.class);
         TestCase.assertNotNull(addMoneyResponse.getBucketInfo());
         TestCase.assertEquals(addMoneyResponse.getBucketInfo().length, 2);
         TestCase.assertEquals(6600, getBucketForName(addMoneyResponse.getBucketInfo(), "Booze").getCurrentTotal());
         TestCase.assertEquals(13400, getBucketForName(addMoneyResponse.getBucketInfo(), "Chicks").getCurrentTotal());
         
         json = "{\"command\":\"ViewFamily\", \"cognitoIdentityId\":\"12345\"}";
-        ViewFamilyResponse vfResponse = (ViewFamilyResponse)runCommand(json, ViewFamilyResponse.class);
+        ViewFamilyResponse vfResponse = runCommand(json, ViewFamilyResponse.class);
         TestCase.assertNotNull(vfResponse);
         TestCase.assertEquals(2, vfResponse.getKids().length);
         TestCase.assertEquals(5, vfResponse.getBuckets().size());
@@ -145,6 +146,10 @@ public class LambdaFunctionHandlerTest {
         		TestCase.fail("Unknown bucket returned from ViewFamily");
         	}
         }
+        
+        json = String.format("{\"command\":\"ViewKidFromToken\", \"viewToken\":\"%s\"}", rkvtResponse.getViewToken());
+        ViewKidFromTokenResponse vkftResponse = runCommand(json, ViewKidFromTokenResponse.class);
+        TestCase.assertNotNull(vkftResponse);
     }
     
     private Bucket getBucketForName( Bucket[] buckets, String name )
@@ -168,7 +173,7 @@ public class LambdaFunctionHandlerTest {
     	System.err.println( output.getMessage() );
     }
     
-    private CommandResponse runCommand(String json, Class<?> responseClass) throws JsonGenerationException, JsonMappingException, IOException
+    private <T> T runCommand(String json, Class<T> responseClass) throws JsonGenerationException, JsonMappingException, IOException
     {
     	System.err.println("Request: " + json);
         Context ctx = createContext();
@@ -177,6 +182,6 @@ public class LambdaFunctionHandlerTest {
         handler.handleRequest(inputStream, outputStream, ctx);
         String outputJson = outputStream.toString();
         System.err.println("Response: " + outputJson);
-        return (CommandResponse)(new ObjectMapper()).readValue(outputJson, responseClass);
+        return (new ObjectMapper()).readValue(outputJson, responseClass);
     }
 }

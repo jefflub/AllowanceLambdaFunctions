@@ -88,7 +88,7 @@ public class Kid
 		return mapper.load(Kid.class, id);
 	}
 	
-	private static final int TOKEN_LENGTH = 6;
+	public static final int TOKEN_LENGTH = 6;
 	private static final String TOKEN_CHARS = "123456789ABCDFGHKLMNPRSTWZ";
 	private static final Random tokenRandomizer = new Random();
 	public static String generateViewToken()

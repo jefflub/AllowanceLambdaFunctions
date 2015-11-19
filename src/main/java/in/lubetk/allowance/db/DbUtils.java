@@ -5,6 +5,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.CreateTableResult;
 import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
+import com.amazonaws.services.dynamodbv2.model.Projection;
+import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 
 public class DbUtils
@@ -28,6 +30,7 @@ public class DbUtils
 	    	for ( GlobalSecondaryIndex i : req.getGlobalSecondaryIndexes() )
 	    	{
 	    		i.setProvisionedThroughput(new ProvisionedThroughput(1L, 1L));
+	    		i.setProjection((new Projection()).withProjectionType(ProjectionType.ALL));
 	    	}
     	}
     	System.err.println(req.toString());
